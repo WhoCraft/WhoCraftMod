@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "whocraft",
+  "version": "${version}",
+  "name": "Whocraft",
+  "description": "Doctor Who Monsters in Minecraft",
+  "authors": [
+    "CommandrMoose",
+    "Suff99",
+    "Teacup"
+  ],
+  "contact": {
+    "repo": "https://github.com/Suff99/WhoCraft"
+  },
+  "license": "All-Rights-Reserved",
+  "icon": "icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "who.whocraft.fabric.WhocraftFabric"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.14.9",
+    "minecraft": ">=1.19.2"
+  }
+}
