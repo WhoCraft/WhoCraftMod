@@ -30,15 +30,6 @@ public abstract class AbstractDalek extends Monster implements Enemy {
                 add(Attributes.ARMOR, 5.0D);
     }
 
-    public void onAiServerStep() {
-
-    }
-
-    @Override
-    public void aiStep() {
-
-    }
-
     /**
      * Move towards a targeted Enemy.
      * **/
