@@ -18,6 +18,9 @@
   "entrypoints": {
     "main": [
       "who.whocraft.fabric.WhocraftFabric"
+    ],
+    "client": [
+      "who.whocraft.fabric.WhocraftClient"
     ]
   },
   "depends": {
