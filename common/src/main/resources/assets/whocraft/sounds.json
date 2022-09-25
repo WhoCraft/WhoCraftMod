@@ -1,0 +1,8 @@
+{
+    "dalek_gun_charge": {
+        "sounds": [
+            "whocraft:dalek_gun_charge"
+        ],
+        "subtitle": "subtitle.whocraft.dalek_gun_charge"
+    }
+}
