@@ -2,6 +2,7 @@ package who.whocraft;
 
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
+import who.whocraft.common.WhocraftSound;
 import who.whocraft.common.entity.WhocraftEntity;
 
 public class Whocraft {
@@ -13,5 +14,6 @@ public class Whocraft {
 
     public static void init() {
         WhocraftEntity.ENTITY_TYPES.register();
+        WhocraftSound.SOUNDS.register();
     }
 }
