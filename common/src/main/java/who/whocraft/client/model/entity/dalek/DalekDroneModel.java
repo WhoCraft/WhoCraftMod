@@ -77,8 +77,12 @@ public class DalekDroneModel extends HierarchicalModel<DalekDrone> {
 		return this.root;
 	}
 
+
 	@Override
 	public void setupAnim(DalekDrone entity, float f, float g, float h, float i, float j) {
-
 	}
+
+
+
+
 }
