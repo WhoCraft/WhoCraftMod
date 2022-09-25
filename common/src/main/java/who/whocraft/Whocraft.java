@@ -2,8 +2,11 @@ package who.whocraft;
 
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
+import who.whocraft.common.block.WhoBlocks;
+import who.whocraft.common.blockentity.WhoBlockEntities;
 import who.whocraft.common.WhocraftSound;
 import who.whocraft.common.entity.WhocraftEntity;
+import who.whocraft.common.item.WhoItems;
 
 public class Whocraft {
 
@@ -14,6 +17,10 @@ public class Whocraft {
 
     public static void init() {
         WhocraftEntity.ENTITY_TYPES.register();
+        WhoItems.ITEMS.register();
+        WhoBlocks.BLOCKS.register();
+        WhoBlockEntities.BLOCK_ENTITY_TYPES.register();
+
         WhocraftSound.SOUNDS.register();
     }
 }
