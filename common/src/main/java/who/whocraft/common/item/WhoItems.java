@@ -6,6 +6,7 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import who.whocraft.Whocraft;
 import who.whocraft.registry.DeferredRegistry;
+import who.whocraft.registry.RegistrySupplier;
 
 public class WhoItems {
 
