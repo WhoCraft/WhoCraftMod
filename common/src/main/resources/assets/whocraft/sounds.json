@@ -4,5 +4,32 @@
             "whocraft:dalek_gun_charge"
         ],
         "subtitle": "subtitle.whocraft.dalek_gun_charge"
+    },
+    "dalek_gun_fire": {
+        "sounds": [
+            "whocraft:dalek_gun_fire"
+        ],
+        "subtitle": "subtitle.whocraft.dalek_gun_fire"
+    },
+    "dalek_exterminate": {
+        "sounds": [
+            "whocraft:dalek_exterminate_one",
+            "whocraft:dalek_exterminate_two",
+            "whocraft:dalek_exterminate_three",
+            "whocraft:dalek_exterminate_four",
+            "whocraft:dalek_exterminate_five",
+            "whocraft:dalek_exterminate_six",
+            "whocraft:dalek_exterminate_seven"
+        ],
+        "subtitle": "subtitle.whocraft.dalek_exterminate"
+    },
+    "dalek_alert": {
+        "sounds": [
+            "whocraft:dalek_alert_one",
+            "whocraft:dalek_alert_two",
+            "whocraft:dalek_alert_three",
+            "whocraft:dalek_alert_four"
+        ],
+        "subtitle": "subtitle.whocraft.dalek_alert"
     }
 }

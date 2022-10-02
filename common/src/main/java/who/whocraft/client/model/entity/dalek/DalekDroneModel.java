@@ -14,12 +14,16 @@ public class DalekDroneModel extends HierarchicalModel<DalekDrone> {
 	private final ModelPart head;
 	private final ModelPart mid;
 	private final ModelPart body;
+	private final ModelPart eyestalk;
+	private final ModelPart gunStick;
 
 	public DalekDroneModel(ModelPart root) {
 		this.root = root;
 		this.head = this.root.getChild("head");
 		this.mid = this.root.getChild("mid");
 		this.body = this.root.getChild("body");
+		this.eyestalk = this.head.getChild("eyestalk");
+		this.gunStick = this.body.getChild("gunstick");
 	}
 
 	public static LayerDefinition createBodyLayer() {
@@ -72,6 +76,8 @@ public class DalekDroneModel extends HierarchicalModel<DalekDrone> {
 		body.render(poseStack, vertexConsumer, packedLight, packedOverlay, red, green, blue, alpha);
 	}
 
+
+
 	@Override
 	public ModelPart root() {
 		return this.root;
@@ -80,6 +86,8 @@ public class DalekDroneModel extends HierarchicalModel<DalekDrone> {
 
 	@Override
 	public void setupAnim(DalekDrone entity, float f, float g, float h, float i, float j) {
+		this.head.yRot = this.gunStick.yRot = i * 0.017453292F;
+		this.eyestalk.xRot = this.gunStick.xRot = j * 0.017453292F;
 	}
 
 

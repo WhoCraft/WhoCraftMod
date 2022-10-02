@@ -1,6 +1,7 @@
 package who.whocraft;
 
 import com.mojang.logging.LogUtils;
+import net.minecraft.client.renderer.entity.SkeletonRenderer;
 import org.slf4j.Logger;
 import who.whocraft.common.block.WhoBlocks;
 import who.whocraft.common.blockentity.WhoBlockEntities;
