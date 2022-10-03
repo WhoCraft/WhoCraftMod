@@ -1,6 +1,8 @@
 package who.whocraft.common.entity.hostile;
 
+import com.mojang.math.Vector3f;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.entity.GuardianRenderer;
 import net.minecraft.client.renderer.entity.WardenRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
@@ -74,9 +76,13 @@ public class DalekDrone extends AbstractDalek implements RangedAttackMob {
     private int ammo = 3;
     private int speechCooldownSeconds;
 
+    @Nullable
+    private LivingEntity clientSideCachedAttackTarget;
+
     Vec3 targetPlacement = null;
 
     private static final EntityDataAccessor<Boolean> FIRING = SynchedEntityData.defineId(DalekDrone.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Integer> DATA_ID_ATTACK_TARGET = SynchedEntityData.defineId(DalekDrone.class, EntityDataSerializers.INT);
 
     public DalekDrone(EntityType<? extends Monster> entityType, Level level) {
         super(entityType, level);
@@ -89,6 +95,7 @@ public class DalekDrone extends AbstractDalek implements RangedAttackMob {
     protected void defineSynchedData() {
         super.defineSynchedData();
         getEntityData().define(FIRING, false);
+        getEntityData().define(DATA_ID_ATTACK_TARGET, 0);
     }
 
     @Override
@@ -133,8 +140,6 @@ public class DalekDrone extends AbstractDalek implements RangedAttackMob {
             onAttackTick();
             return;
         }
-
-
     }
 
     public void dialogueRandomTick(){
@@ -156,7 +161,7 @@ public class DalekDrone extends AbstractDalek implements RangedAttackMob {
             players.removeIf(player -> player.isSpectator() || player.isInvisible() || player.level != level || player.isCreative());
 
             if (!players.isEmpty()) {
-                setTarget(players.get(level.random.nextInt(players.size())));
+                updateEntityTarget(players.get(level.random.nextInt(players.size())));
                 beginPursue();
             }
         }
@@ -166,10 +171,22 @@ public class DalekDrone extends AbstractDalek implements RangedAttackMob {
         if (getTarget() == null) {
             beginIdle();
         } else {
-            if ((getTarget().distanceTo(this) < 10 || hasLineOfSight(getTarget())) && attackCooldown == 0) {
+            if ((getTarget().distanceTo(this) < 25 && hasLineOfSight(getTarget())) && attackCooldown == 0) {
                 beginAttack(getTarget());
             }
         }
+    }
+
+    private void updateEntityTarget(LivingEntity target) {
+        if (target == null) {
+            this.getEntityData().set(DATA_ID_ATTACK_TARGET, 0);
+            setTarget(null);
+        } else {
+            this.getEntityData().set(DATA_ID_ATTACK_TARGET, target.getId());
+            setTarget(target);
+        }
+
+
     }
 
     private void onAttackTick() {
@@ -177,12 +194,15 @@ public class DalekDrone extends AbstractDalek implements RangedAttackMob {
         getNavigation().stop();
         setSpeed(0);
         setDeltaMovement(0, 0, 0);
-        setTarget(attackTarget);
+        //setTarget(attackTarget);
+        this.getNavigation().stop();
+        this.getLookControl().setLookAt(attackTarget, 90f, 90f);
+        this.setYBodyRot(getYHeadRot());
 
         if (ammo <= 0) {
             ammo = 3;
 
-            setTarget(attackTarget);
+            updateEntityTarget(attackTarget);
 
             attackCooldown = 3;
             beginPursue();
@@ -197,7 +217,7 @@ public class DalekDrone extends AbstractDalek implements RangedAttackMob {
 
             if (tickCount % 10 == 0 ) {
                 if (attackTime <= 0) {
-                    if (laserTime == 0) {
+                    if (laserTime == 0 || !this.hasLineOfSight(attackTarget)) {
                         attackTime = 1;
                         laserTime = 2;
                         getEntityData().set(FIRING, false);
@@ -218,10 +238,13 @@ public class DalekDrone extends AbstractDalek implements RangedAttackMob {
             if (getIsFiring()) {
                 if (this.hasLineOfSight(attackTarget)) {
                     System.out.println("CAN SEE PLAYER");
-                    attackTarget.hurt(DamageSource.CACTUS, 1f);
+                    if (attackTarget.getDeltaMovement().horizontalDistance() < 0.1) {
+                        attackTarget.hurt(DamageSource.CACTUS, 1f);
+                    }
 
                 }
             }
+
 
             //System.out.println(hit.getType());
 
@@ -257,14 +280,6 @@ public class DalekDrone extends AbstractDalek implements RangedAttackMob {
         }
     }
 
-    protected EntityHitResult findHitEntity(Vec3 vec3, Vec3 vec32) {
-        return ProjectileUtil.getEntityHitResult(this.level, this, vec3, vec32, this.getBoundingBox().expandTowards(this.getDeltaMovement()).inflate(10.0D), this::canHitEntity);
-    }
-
-    protected boolean canHitEntity(Entity entity) {
-        return true;
-    }
-
     private void beginAttack(LivingEntity entity) {
         announceAlerted();
         Player target = (Player) getTarget();
@@ -272,6 +287,7 @@ public class DalekDrone extends AbstractDalek implements RangedAttackMob {
         target.displayClientMessage(Component.translatable("Dalek is beginning attack!"), false);
         attackState = DalekDroneState.ATTACK;
         this.getBrain().removeAllBehaviors();
+        this.goalSelector.removeGoal(lookAroundGoal);
         getNavigation().stop();
         setSpeed(0);
         setDeltaMovement(0, 0, 0);
@@ -298,7 +314,7 @@ public class DalekDrone extends AbstractDalek implements RangedAttackMob {
         this.goalSelector.addGoal(8, lookAroundGoal);
         this.goalSelector.addGoal(6, randomWalkGoal);
         attackState = DalekDroneState.IDLE;
-        setTarget(null);
+        updateEntityTarget(null);
     }
 
     private void announceAlerted() {
@@ -325,6 +341,17 @@ public class DalekDrone extends AbstractDalek implements RangedAttackMob {
 
     public boolean getIsFiring() {
         return getEntityData().get(FIRING);
+    }
+
+    @Nullable
+    public LivingEntity getActiveAttackTarget() {
+        Entity entity = this.level.getEntity(this.entityData.get(DATA_ID_ATTACK_TARGET));
+        System.out.println(entity);
+        if (entity instanceof LivingEntity) {
+            return (LivingEntity) entity;
+        } else {
+            return null;
+        }
     }
 
 }

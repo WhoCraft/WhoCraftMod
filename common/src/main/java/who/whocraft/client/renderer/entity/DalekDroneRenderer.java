@@ -2,6 +2,8 @@ package who.whocraft.client.renderer.entity;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.math.Matrix3f;
+import com.mojang.math.Matrix4f;
 import com.mojang.math.Vector3f;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -11,6 +13,7 @@ import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import who.whocraft.Whocraft;
 import who.whocraft.client.model.ModelRegistry;
@@ -37,33 +40,48 @@ public class DalekDroneRenderer extends LivingEntityRenderer<DalekDrone, DalekDr
         super.setupRotations(livingEntity, poseStack, f, g, h);
     }
 
-
     @Override
-    public void render(DalekDrone livingEntity, float f, float g, PoseStack poseStack, MultiBufferSource multiBufferSource, int i) {
-        super.render(livingEntity, f, g, poseStack, multiBufferSource, i);
-        if (livingEntity.getIsFiring()) {
-            poseStack.pushPose();
-            Vec3 vec1 = new Vec3(livingEntity.xOld, livingEntity.yOld,livingEntity.zOld);
-            Vec3 vec2 = new Vec3(livingEntity.getX(), livingEntity.getY(), livingEntity.getZ());
+    public void render(DalekDrone dalek, float f, float g, PoseStack poseStack, MultiBufferSource multiBufferSource, int i) {
+        super.render(dalek, f, g, poseStack, multiBufferSource, i);
 
-            double x_ = vec2.x - vec1.x;
-            double y_ = vec2.y - vec1.y;
-            double z_ = vec2.z - vec1.z;
-            double diff = Mth.sqrt((float) (x_ * x_ + z_ * z_));
-            float yaw = -livingEntity.getYHeadRot();
-            //float yaw = (float) (Math.atan2(z_, x_) * 180.0D / 3.141592653589793D) - 90.0F;
-            poseStack.mulPose(Vector3f.YP.rotationDegrees(yaw));
-            poseStack.mulPose(Vector3f.XP.rotationDegrees(90.0F));
-            poseStack.translate(0.2175f, 0.25f ,-1.06f);
+        var livingEntity = dalek.getActiveAttackTarget();
+        if (livingEntity != null && dalek.getIsFiring()) {
+
+            float l = dalek.getEyeHeight() - 0.5f;
+
+            poseStack.pushPose();
+            poseStack.translate(0.0D, (double)l, 0.0D);
+            Vec3 vec3 = this.getPosition(livingEntity, (double)livingEntity.getBbHeight() * 0.5D, g);
+            Vec3 vec32 = this.getPosition(dalek, (double)l, g);
+            Vec3 vec33 = vec3.subtract(vec32);
+            vec33 = vec33.normalize();
+            float n = (float)Math.acos(vec33.y);
+            float o = (float)Math.atan2(vec33.z, vec33.x);
+            poseStack.mulPose(Vector3f.YP.rotationDegrees((1.5707964F - o) * 57.295776F));
+            poseStack.mulPose(Vector3f.XP.rotationDegrees(n * 57.295776F));
+
+            float distance = (float)dalek.position().distanceToSqr(livingEntity.position()) / 100;
+
             VertexConsumer vertexBuilder = multiBufferSource.getBuffer(RenderType.lightning());
-            RenderHelper.drawGlowingLine(poseStack, vertexBuilder, 100f, 0.1F, (float) livingEntity.LASER_COLOR.getRed(), (float) livingEntity.LASER_COLOR.getGreen(), (float) livingEntity.LASER_COLOR.getBlue(), 1F, 15728640);
+            RenderHelper.drawGlowingLine(poseStack, vertexBuilder, distance, 0.1F, 255, 255, 255, 1F, 15728640);
             poseStack.popPose();
         }
 
+    }
+
+    private Vec3 getPosition(LivingEntity livingEntity, double d, float f) {
+        double e = Mth.lerp((double)f, livingEntity.xOld, livingEntity.getX());
+        double g = Mth.lerp((double)f, livingEntity.yOld, livingEntity.getY()) + d;
+        double h = Mth.lerp((double)f, livingEntity.zOld, livingEntity.getZ());
+        return new Vec3(e, g, h);
+    }
 
 
+    //private static final ResourceLocation GUARDIAN_LOCATION = new ResourceLocation("textures/entity/guardian.png");
+    private static final ResourceLocation GUARDIAN_BEAM_LOCATION = new ResourceLocation(Whocraft.MODID, "textures/entity/dalek/dalek_beam.png");
+    private static final RenderType BEAM_RENDER_TYPE;
 
-
-
+    static {
+        BEAM_RENDER_TYPE = RenderType.entityCutoutNoCull(GUARDIAN_BEAM_LOCATION);
     }
 }
