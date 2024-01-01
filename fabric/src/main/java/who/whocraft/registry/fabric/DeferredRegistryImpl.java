@@ -3,7 +3,7 @@ package who.whocraft.registry.fabric;
 
 import com.google.common.base.MoreObjects;
 import net.minecraft.core.Registry;
-import net.minecraft.data.BuiltinRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import who.whocraft.registry.DeferredRegistry;
@@ -29,7 +29,7 @@ public class DeferredRegistryImpl {
 
         public Impl(String modid, ResourceKey<? extends Registry<T>> resourceKey) {
             this.modid = modid;
-            this.registry = (Registry<T>) MoreObjects.firstNonNull(Registry.REGISTRY.get(resourceKey.location()), BuiltinRegistries.REGISTRY.get(resourceKey.location()));
+            this.registry = (Registry<T>) BuiltInRegistries.REGISTRY.get(resourceKey.location());
             this.entries = new ArrayList<>();
         }
 

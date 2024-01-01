@@ -2,6 +2,7 @@ package who.whocraft.common.item;
 
 import dev.architectury.injectables.annotations.ExpectPlatform;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import who.whocraft.Whocraft;
@@ -13,12 +14,12 @@ public class WhoItems {
     public static CreativeModeTab MAIN_TAB = null;
 
     static {
-        if (MAIN_TAB == null) {
+      /*  if (MAIN_TAB == null) {
             MAIN_TAB = getCreativeTab();
-        }
+        }*/
     }
 
-    public static final DeferredRegistry<Item> ITEMS = DeferredRegistry.create(Whocraft.MODID, Registry.ITEM_REGISTRY);
+    public static final DeferredRegistry<Item> ITEMS = DeferredRegistry.create(Whocraft.MODID, Registries.ITEM);
 
 
     @ExpectPlatform

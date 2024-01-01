@@ -2,6 +2,7 @@ package who.whocraft.common.entity;
 
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -16,7 +17,7 @@ import static who.whocraft.Whocraft.MODID;
 
 public class WhocraftEntity {
 
-    public static final DeferredRegistry<EntityType<?>> ENTITY_TYPES = DeferredRegistry.create(MODID, Registry.ENTITY_TYPE_REGISTRY);
+    public static final DeferredRegistry<EntityType<?>> ENTITY_TYPES = DeferredRegistry.create(MODID, Registries.ENTITY_TYPE);
 
     public static final RegistrySupplier<EntityType<DalekDrone>> DALEK = ENTITY_TYPES.register("dalek", () -> EntityType.Builder.of((EntityType.EntityFactory<DalekDrone>) (entityType, level) -> new DalekDrone(entityType, level), MobCategory.CREATURE).sized(0.6F, 1.95F).build(MODID + ":dalek"));
 

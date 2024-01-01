@@ -2,10 +2,10 @@ package who.whocraft.common.util;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
-import com.mojang.math.Matrix4f;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Matrix4f;
 import who.whocraft.Whocraft;
 
 public class RenderHelper {
@@ -78,7 +78,7 @@ public class RenderHelper {
         Tesselator tessellator = Tesselator.getInstance();
         BufferBuilder bufferBuilder = tessellator.getBuilder();
         RenderSystem.enableBlend();
-        RenderSystem.disableTexture();
+       //TODO RenderSystem.disableTexture();
         RenderSystem.blendFuncSeparate(770, 771, 1, 0);
         RenderSystem.setShaderColor(red, green, blue, alpha);
         bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
@@ -87,7 +87,7 @@ public class RenderHelper {
         bufferBuilder.vertex(right, top, 0.0D).endVertex();
         bufferBuilder.vertex(left, top, 0.0D).endVertex();
         tessellator.end();
-        RenderSystem.enableTexture();
+       //TODO RenderSystem.enableTexture();
         RenderSystem.disableBlend();
     }
 }

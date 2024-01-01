@@ -4,6 +4,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import who.whocraft.client.model.ModelRegistry;
 import who.whocraft.client.renderer.entity.DalekDroneRenderer;
+import who.whocraft.client.renderer.entity.DalekRendererGecko;
 import who.whocraft.common.entity.WhocraftEntity;
 
 public class WhocraftClient implements ClientModInitializer {
@@ -14,6 +15,6 @@ public class WhocraftClient implements ClientModInitializer {
     }
 
     private void entityRenders() {
-        EntityRendererRegistry.register(WhocraftEntity.DALEK.get(), DalekDroneRenderer::new);
+        EntityRendererRegistry.register(WhocraftEntity.DALEK.get(), DalekRendererGecko::new);
     }
 }

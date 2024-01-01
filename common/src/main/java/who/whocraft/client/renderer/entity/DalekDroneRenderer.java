@@ -2,15 +2,11 @@ package who.whocraft.client.renderer.entity;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.math.Matrix3f;
-import com.mojang.math.Matrix4f;
-import com.mojang.math.Vector3f;
+import com.mojang.math.Axis;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.entity.EndermanRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
-import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.LivingEntity;
@@ -19,7 +15,6 @@ import who.whocraft.Whocraft;
 import who.whocraft.client.model.ModelRegistry;
 import who.whocraft.client.model.entity.dalek.DalekDroneModel;
 import who.whocraft.client.renderer.layers.DalekEyestalkLayer;
-import who.whocraft.common.entity.WhocraftEntity;
 import who.whocraft.common.entity.hostile.DalekDrone;
 import who.whocraft.common.util.RenderHelper;
 
@@ -57,8 +52,8 @@ public class DalekDroneRenderer extends LivingEntityRenderer<DalekDrone, DalekDr
             vec33 = vec33.normalize();
             float n = (float)Math.acos(vec33.y);
             float o = (float)Math.atan2(vec33.z, vec33.x);
-            poseStack.mulPose(Vector3f.YP.rotationDegrees((1.5707964F - o) * 57.295776F));
-            poseStack.mulPose(Vector3f.XP.rotationDegrees(n * 57.295776F));
+            poseStack.mulPose(Axis.YP.rotationDegrees((1.5707964F - o) * 57.295776F));
+            poseStack.mulPose(Axis.XP.rotationDegrees(n * 57.295776F));
 
             float distance = (float)dalek.position().distanceToSqr(livingEntity.position()) / 100;
 

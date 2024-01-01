@@ -1,59 +1,85 @@
 package who.whocraft.common.entity.hostile;
 
-import com.mojang.math.Vector3f;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.entity.GuardianRenderer;
-import net.minecraft.client.renderer.entity.WardenRenderer;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageSources;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.goal.*;
-import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.ai.navigation.WallClimberNavigation;
-import net.minecraft.world.entity.ambient.Bat;
-import net.minecraft.world.entity.monster.*;
-import net.minecraft.world.entity.monster.warden.Warden;
-import net.minecraft.world.entity.monster.warden.WardenAi;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.TorchBlock;
-import net.minecraft.world.level.pathfinder.Path;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.EntityHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
+import software.bernie.geckolib.animatable.GeoEntity;
+import software.bernie.geckolib.animatable.SingletonGeoAnimatable;
+import software.bernie.geckolib.core.animatable.GeoAnimatable;
+import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.core.animation.AnimatableManager;
+import software.bernie.geckolib.core.animation.AnimationController;
+import software.bernie.geckolib.core.animation.AnimationState;
+import software.bernie.geckolib.core.animation.RawAnimation;
+import software.bernie.geckolib.core.object.PlayState;
+import software.bernie.geckolib.util.GeckoLibUtil;
 import who.whocraft.common.WhocraftSound;
-import who.whocraft.common.entity.WhocraftEntity;
 
-import javax.annotation.Nullable;
 import java.awt.*;
 import java.util.List;
-import java.util.function.Predicate;
 
-public class DalekDrone extends AbstractDalek implements RangedAttackMob {
+public class DalekDrone extends AbstractDalek implements RangedAttackMob, GeoEntity {
+
+
+    private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
+    protected static final RawAnimation FLY_ANIM = RawAnimation.begin().thenLoop("dalek.idle");
+
+
+    @Override
+    public void registerControllers(final AnimatableManager.ControllerRegistrar controllers) {
+        controllers.add(new AnimationController<>(this, "Flying", 5, this::flyAnimController));
+    }
+
+    private PlayState flyAnimController(AnimationState<DalekDrone> dalekDroneAnimationState) {
+        if (!dalekDroneAnimationState.isMoving()) {
+            return dalekDroneAnimationState.setAndContinue(FLY_ANIM);
+        }
+        return PlayState.STOP;
+    }
+
+    @Override
+    public void baseTick() {
+        super.baseTick();
+        triggerAnim("Flying", "idle");
+    }
+
+    @Override
+    public AnimatableInstanceCache getAnimatableInstanceCache() {
+        return this.geoCache;
+    }
+
+    @Override
+    public double getTick(Object object) {
+
+        if(object instanceof Entity entity){
+            return entity.tickCount;
+        }
+
+        return 0;
+    }
 
     public enum DalekDroneState {
         IDLE, SCAN, PURSUE, CHARGE, ATTACK
@@ -76,7 +102,6 @@ public class DalekDrone extends AbstractDalek implements RangedAttackMob {
     private int ammo = 3;
     private int speechCooldownSeconds;
 
-    @Nullable
     private LivingEntity clientSideCachedAttackTarget;
 
     Vec3 targetPlacement = null;
@@ -87,8 +112,9 @@ public class DalekDrone extends AbstractDalek implements RangedAttackMob {
     public DalekDrone(EntityType<? extends Monster> entityType, Level level) {
         super(entityType, level);
         this.goalSelector.addGoal(0, new FloatGoal(this));
-        speechCooldownSeconds = 2 + level.getRandom().nextInt(13);
+        speechCooldownSeconds = 2 + level().getRandom().nextInt(13);
         beginIdle();
+        SingletonGeoAnimatable.registerSyncedAnimatable(this);
 
     }
     @Override
@@ -112,7 +138,7 @@ public class DalekDrone extends AbstractDalek implements RangedAttackMob {
     public void tick() {
         super.tick();
 
-        if (!level.isClientSide()) {
+        if (!level().isClientSide()) {
             if (tickCount % 20 == 0) {
                 if (attackCooldown > 0) {
                     attackCooldown--;
@@ -126,7 +152,7 @@ public class DalekDrone extends AbstractDalek implements RangedAttackMob {
         super.aiStep();
         // Update state.
         if (speechCooldownSeconds > 0 && tickCount % 20 == 0) {speechCooldownSeconds--;}
-        //dialogueRandomTick();
+        dialogueRandomTick();
 
         if (attackState == DalekDroneState.IDLE) {
             onIdleTick();
@@ -145,23 +171,23 @@ public class DalekDrone extends AbstractDalek implements RangedAttackMob {
     public void dialogueRandomTick(){
         if (attackState == DalekDroneState.ATTACK) {
             if (speechCooldownSeconds == 0) {
-                if (level.getRandom().nextInt(3) == 0) {
-                    if (!level.isClientSide()) {
-                        level.playSound(null, this, WhocraftSound.DALEK_EXTERMINATE.get(), SoundSource.HOSTILE, 1.25f, 1f);
+                if (level().getRandom().nextInt(3) == 0) {
+                    if (!level().isClientSide()) {
+                        level().playSound(null, this, WhocraftSound.DALEK_EXTERMINATE.get(), SoundSource.HOSTILE, 1.25f, 1f);
                     }
-                    speechCooldownSeconds = 5 + level.getRandom().nextInt(10);
+                    speechCooldownSeconds = 5 + level().getRandom().nextInt(10);
                 }
             }
         }
     }
 
     public void onIdleTick() {
-        if (!level.isClientSide()) {
-            List<Player> players = level.getEntitiesOfClass(Player.class, getBoundingBox().inflate(20));
-            players.removeIf(player -> player.isSpectator() || player.isInvisible() || player.level != level || player.isCreative());
+        if (!level().isClientSide()) {
+            List<Player> players = level().getEntitiesOfClass(Player.class, getBoundingBox().inflate(20));
+            players.removeIf(player -> player.isSpectator() || player.isInvisible() || player.level() != level() || player.isCreative());
 
             if (!players.isEmpty()) {
-                updateEntityTarget(players.get(level.random.nextInt(players.size())));
+                updateEntityTarget(players.get(level().random.nextInt(players.size())));
                 beginPursue();
             }
         }
@@ -239,7 +265,7 @@ public class DalekDrone extends AbstractDalek implements RangedAttackMob {
                 if (this.hasLineOfSight(attackTarget)) {
                     System.out.println("CAN SEE PLAYER");
                     if (attackTarget.getDeltaMovement().horizontalDistance() < 0.1) {
-                        attackTarget.hurt(DamageSource.CACTUS, 1f);
+                    //TODO    attackTarget.hurt(new DamageSource(DamageTypes.CACTUS, this), 1f);
                     }
 
                 }
@@ -259,10 +285,10 @@ public class DalekDrone extends AbstractDalek implements RangedAttackMob {
 //                    System.out.println(result.getEntity().getDisplayName());
 //                }
 //
-//                //this.level.setBlock(new BlockPos(targetPlacement), Blocks.IRON_BLOCK.defaultBlockState(), 3);
-////                HitResult hit = this.level.clip(new ClipContext(thisPos, targetPlacement.add(0,1,0), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this));
+//                //this.level().setBlock(new BlockPos(targetPlacement), Blocks.IRON_BLOCK.defaultBlockState(), 3);
+////                HitResult hit = this.level().clip(new ClipContext(thisPos, targetPlacement.add(0,1,0), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this));
 ////                System.out.println(hit.getType());
-////                //this.level.setBlock(new BlockPos(hit.getLocation()), Blocks.GLOWSTONE.defaultBlockState(), 3);
+////                //this.level().setBlock(new BlockPos(hit.getLocation()), Blocks.GLOWSTONE.defaultBlockState(), 3);
 //////                if (result != null) {
 //////                    System.out.println("Found " + result.getEntity().getName());
 //////                }
@@ -270,14 +296,16 @@ public class DalekDrone extends AbstractDalek implements RangedAttackMob {
 ////                double d = (double)blockPosition().getX() + 0.5D;
 ////                double e = (double)blockPosition().getY() + 0.7D;
 ////                double f = (double)blockPosition().getZ() + 0.5D;
-////                level.addParticle(ParticleTypes.SMOKE, d, e, f, 0.0D, 0.0D, 0.0D);
-////                level.addParticle(ParticleTypes.FLAME, d, e, f, 0.0D, 0.0D, 0.0D);
+////                level().addParticle(ParticleTypes.SMOKE, d, e, f, 0.0D, 0.0D, 0.0D);
+////                level().addParticle(ParticleTypes.FLAME, d, e, f, 0.0D, 0.0D, 0.0D);
 ////
 ////                if (hit.getType() == HitResult.Type.ENTITY) {
 ////                    System.out.println("AHHHH");
 ////                }
 //            }
         }
+
+
     }
 
     private void beginAttack(LivingEntity entity) {
@@ -295,8 +323,8 @@ public class DalekDrone extends AbstractDalek implements RangedAttackMob {
         attackTime = 3;
         laserTime = 2;
 
-        if (!level.isClientSide()) {
-            level.playSound(null, this, WhocraftSound.DALEK_GUN_CHARGE.get(), SoundSource.HOSTILE, 1f, 1f);
+        if (!level().isClientSide()) {
+            level().playSound(null, this, WhocraftSound.DALEK_GUN_CHARGE.get(), SoundSource.HOSTILE, 1f, 1f);
         }
     }
 
@@ -319,8 +347,8 @@ public class DalekDrone extends AbstractDalek implements RangedAttackMob {
 
     private void announceAlerted() {
         if (attackState == DalekDroneState.IDLE) {
-            if (!level.isClientSide()) {
-                level.playSound(null, this, WhocraftSound.DALEK_ALERT.get(), SoundSource.HOSTILE, 1.25f, 1f);
+            if (!level().isClientSide()) {
+                level().playSound(null, this, WhocraftSound.DALEK_ALERT.get(), SoundSource.HOSTILE, 1.25f, 1f);
             }
         }
     }
@@ -328,24 +356,23 @@ public class DalekDrone extends AbstractDalek implements RangedAttackMob {
     @Override
     public void performRangedAttack(LivingEntity livingEntity, float amount) {
         //TODO Temp code for testing - thanks Craig
-        ItemStack itemStack = this.getProjectile(this.getItemInHand(ProjectileUtil.getWeaponHoldingHand(this, Items.BOW)));
-        AbstractArrow abstractArrow = ProjectileUtil.getMobArrow(this, itemStack, 99);
-        double d = livingEntity.getX() - this.getX();
-        double e = livingEntity.getY(0.3333333333333333) - abstractArrow.getY();
-        double g = livingEntity.getZ() - this.getZ();
-        double h = Math.sqrt(d * d + g * g);
-        abstractArrow.shoot(d, e + h * 0.20000000298023224, g, 2F, (float) (14 - this.level.getDifficulty().getId() * 4));
+        AbstractArrow arrow = ProjectileUtil.getMobArrow(this, new ItemStack(Items.ARROW), 99);
+        double dX = livingEntity.getX() - this.getX();
+        double dY = livingEntity.getY(0.3333333333333333) - arrow.getY();
+        double dZ = livingEntity.getZ() - this.getZ();
+        double distance = Math.sqrt(dX * dX + dZ * dZ);
+        arrow.shoot(dX, dY + distance * 0.2, dZ, 2.0F, (float) (14 - this.level().getDifficulty().getId() * 4));
         this.playSound(WhocraftSound.DALEK_GUN_FIRE.get(), 5.0F, 1.0F / (this.getRandom().nextFloat() * 0.4F + 0.8F));
-        this.level.addFreshEntity(abstractArrow);
+        this.level().addFreshEntity(arrow);
+
     }
 
     public boolean getIsFiring() {
         return getEntityData().get(FIRING);
     }
 
-    @Nullable
     public LivingEntity getActiveAttackTarget() {
-        Entity entity = this.level.getEntity(this.entityData.get(DATA_ID_ATTACK_TARGET));
+        Entity entity = this.level().getEntity(this.entityData.get(DATA_ID_ATTACK_TARGET));
         System.out.println(entity);
         if (entity instanceof LivingEntity) {
             return (LivingEntity) entity;
